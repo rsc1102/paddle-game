@@ -158,6 +158,46 @@
             isDragging = false;
         });
 
+        // Touch event listeners for dragging the paddle on mobile
+        canvas.addEventListener('touchstart', (e) => {
+            const touch = e.touches[0];
+            const rect = canvas.getBoundingClientRect();
+            const touchX = touch.clientX - rect.left;
+            const touchY = touch.clientY - rect.top;
+
+            if (touchX >= paddle.x && touchX <= paddle.x + paddle.width &&
+                touchY >= paddle.y && touchY <= paddle.y + paddle.height) {
+                isDragging = true;
+                offsetX = touchX - paddle.x;
+            }
+        });
+
+        canvas.addEventListener('touchmove', (e) => {
+            if (isDragging) {
+                const touch = e.touches[0];
+                const rect = canvas.getBoundingClientRect();
+                const touchX = touch.clientX - rect.left;
+                paddle.x = touchX - offsetX;
+
+                // Keep paddle within canvas boundaries
+                if (paddle.x < 0) {
+                    paddle.x = 0;
+                }
+                if (paddle.x + paddle.width > canvas.width) {
+                    paddle.x = canvas.width - paddle.width;
+                }
+            }
+            e.preventDefault();
+        });
+
+        canvas.addEventListener('touchend', () => {
+            isDragging = false;
+        });
+
+        canvas.addEventListener('touchcancel', () => {
+            isDragging = false;
+        });
+
         // Game loop
         function gameLoop() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
