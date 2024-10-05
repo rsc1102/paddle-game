@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paddle Game</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: #87CEEB;
+        }
+        canvas {
+            background: #fff;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="endModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); display: none; justify-content: center; align-items: center; z-index: 10;">
+        <div style="background: white; padding: 20px; border-radius: 10px; text-align: center;">
+            <h2>Game Over!</h2>
+            <p id="finalScore">Your final score is: 0</p>
+            <button id="restartButton" onclick="location.reload();" style="padding: 10px 20px; font-size: 16px; cursor: pointer;">Restart Game</button>
+        </div>
+    </div>
+    <div id="startModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); display: flex; justify-content: center; align-items: center; z-index: 10;">
+        <div style="background: white; padding: 20px; border-radius: 10px; text-align: center;">
+            <h2 style="margin-bottom: 20px;">Paddle Game</h2>
+            <button id="startButton" style="padding: 10px 20px; font-size: 16px; cursor: pointer;">Start Game</button>
+        </div>
+    </div>
+    <canvas id="gameCanvas" width="400" height="600"></canvas>
+    <script>
+        function showEndModal(finalScore) {
+            document.getElementById('finalScore').textContent = 'Your final score is: ' + finalScore;
+            document.getElementById('endModal').style.display = 'flex';
+        }
+        document.getElementById('startButton').addEventListener('click', function() {
+            document.getElementById('startModal').style.display = 'none';
+            gameLoop(); // Start game when start button is clicked
+            generateItems();
+        });
+        let score = 0;
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const ballSpeed = 5;
+        let ball = { x: 200, y: 300, radius: 15, vx: ballSpeed, vy: -ballSpeed };
+        let paddle = { x: 150, y: 550, width: 100, height: 15, speed: 0 };
+        const keys = { left: false, right: false };
+        let items = [];
+
+        // Utility function to draw the ball
+        function drawBall() {
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+            ctx.fillStyle = '#FF6347';
+            ctx.fill();
+            ctx.closePath();
+        }
+
+        // Utility function to draw the score
+        function drawScore() {
+            ctx.font = '20px Arial';
+            ctx.fillStyle = '#000';
+            ctx.fillText('Score: ' + score, 10, 30);
+        }
+
+        // Utility function to draw the paddle
+        function drawPaddle() {
+            ctx.beginPath();
+            ctx.rect(paddle.x, paddle.y, paddle.width, paddle.height);
+            ctx.fillStyle = '#000';
+            ctx.fill();
+            ctx.closePath();
+        }
+
+        // Utility function to draw items
+        function drawItems() {
+            items.forEach(item => {
+                ctx.beginPath();
+                ctx.arc(item.x, item.y, item.radius, 0, Math.PI * 2);
+                ctx.fillStyle = '#32CD32';
+                ctx.fill();
+                ctx.closePath();
+            });
+        }
+
+        // Function to randomly generate items
+        function generateItems() {
+            for (let i = 0; i < 5; i++) {
+                const item = {
+                    x: Math.random() * (canvas.width - 20) + 10,
+                    y: Math.random() * (canvas.height - 200) + 50,
+                    radius: 10
+                };
+                items.push(item);
+            }
+        }
+
+        // Key event listeners
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') {
+                keys.left = true;
+            }
+            if (e.key === 'ArrowRight') {
+                keys.right = true;
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (e.key === 'ArrowLeft') {
+                keys.left = false;
+            }
+            if (e.key === 'ArrowRight') {
+                keys.right = false;
+            }
+        });
+
+        // Game loop
+        function gameLoop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Update paddle position
+            if (keys.left) {
+                paddle.speed = -5;
+            } else if (keys.right) {
+                paddle.speed = 5;
+            } else {
+                paddle.speed = 0;
+            }
+            paddle.x += paddle.speed;
+
+            // Keep paddle within canvas boundaries
+            if (paddle.x < 0) {
+                paddle.x = 0;
+            }
+            if (paddle.x + paddle.width > canvas.width) {
+                paddle.x = canvas.width - paddle.width;
+            }
+
+            // Update ball position
+            ball.x += ball.vx;
+            ball.y += ball.vy;
+
+            // Bounce off walls
+            if (ball.x < ball.radius || ball.x > canvas.width - ball.radius) {
+                ball.vx *= -1;
+            }
+            if (ball.y < ball.radius) {
+                ball.vy *= -1;
+            }
+
+            // Bounce off paddle
+            if (
+                ball.y + ball.radius > paddle.y &&
+                ball.x > paddle.x &&
+                ball.x < paddle.x + paddle.width
+            ) {
+                ball.vy *= -1;
+                ball.y = paddle.y - ball.radius; // Adjust position to avoid sticking
+            }
+
+            // Game over if ball hits the bottom
+            if (ball.y > canvas.height) {
+                showEndModal(score);
+                
+                resetGame();
+                score = 0;
+                // Reset ball position
+                ball.x = 200;
+                ball.y = 300;
+                ball.vx = ballSpeed;
+                ball.vy = -ballSpeed;
+                items = [];
+                generateItems();
+            }
+
+            // Check if ball collects an item
+            items = items.filter(item => {
+                const dx = ball.x - item.x;
+                const dy = ball.y - item.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                if (distance < ball.radius + item.radius) {
+                    score++;
+                    // Item collected, generate a new one
+                    setTimeout(() => {
+                        items.push({
+                            x: Math.random() * (canvas.width - 20) + 10,
+                            y: Math.random() * (canvas.height - 200) + 50,
+                            radius: 10
+                        });
+                    }, 100);
+                    return false;
+                }
+                return true;
+            });
+                
+
+            // Draw the paddle, ball, items, and score
+            drawPaddle();
+            drawBall();
+            drawItems();
+            drawScore();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // generateItems();
+        // gameLoop();
+    </script>
+</body>
+</html>
