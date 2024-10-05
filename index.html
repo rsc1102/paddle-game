@@ -46,6 +46,7 @@
             gameLoop(); // Start game when start button is clicked
             generateItems();
         });
+        
         let score = 0;
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
@@ -55,6 +56,9 @@
         let paddle = { x: 150, y: 550, width: 100, height: 15, speed: 0 };
         const keys = { left: false, right: false };
         let items = [];
+
+        let isDragging = false;
+        let offsetX = 0;
 
         // Utility function to draw the ball
         function drawBall() {
@@ -123,6 +127,37 @@
             }
         });
 
+        // Mouse event listeners for dragging the paddle
+        canvas.addEventListener('mousedown', (e) => {
+            if (e.offsetX >= paddle.x && e.offsetX <= paddle.x + paddle.width &&
+                e.offsetY >= paddle.y && e.offsetY <= paddle.y + paddle.height) {
+                isDragging = true;
+                offsetX = e.offsetX - paddle.x;
+            }
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (isDragging) {
+                paddle.x = e.offsetX - offsetX;
+
+                // Keep paddle within canvas boundaries
+                if (paddle.x < 0) {
+                    paddle.x = 0;
+                }
+                if (paddle.x + paddle.width > canvas.width) {
+                    paddle.x = canvas.width - paddle.width;
+                }
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            isDragging = false;
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            isDragging = false;
+        });
+
         // Game loop
         function gameLoop() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -170,7 +205,6 @@
             // Game over if ball hits the bottom
             if (ball.y > canvas.height) {
                 showEndModal(score);
-                
                 resetGame();
                 score = 0;
                 // Reset ball position
@@ -201,7 +235,6 @@
                 }
                 return true;
             });
-                
 
             // Draw the paddle, ball, items, and score
             drawPaddle();
@@ -211,9 +244,6 @@
 
             requestAnimationFrame(gameLoop);
         }
-
-        // generateItems();
-        // gameLoop();
     </script>
 </body>
 </html>
